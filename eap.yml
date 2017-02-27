@@ -1,0 +1,79 @@
+---
+- hosts: all
+  vars:
+    ansible_become: True
+    #database_type: pgsql
+    #database_type_long: postgresql
+    #server_dbport: 5432
+
+  # pre_tasks:
+  # - name: Install Postgresql
+  #   yum:
+  #     pkg: postgresql-server
+  #     state: present
+
+  # - name: Initiate database
+  #   command: service postgresql initdb
+  #   args:
+  #     creates: /var/lib/pgsql/data/postgresql.conf
+
+  # - name: Configure PostgreSQL authentication
+  #   lineinfile:
+  #     dest: /var/lib/pgsql/data/pg_hba.conf
+  #     regexp: '^host +all +all +::1/128 +ident'
+  #     line: 'host    all             all             ::1/128            trust'
+
+  # - name: Enable PostgreSQL
+  #   service:
+  #     name: "{{ item }}"
+  #     enabled: yes
+  #     state: started
+  #   with_items:
+  #     - postgresql
+
+#  roles:
+#  - { role: geerlingguy.apache }
+#  - { role: dj-wasabi.zabbix-server, database_type: pgsql, database_type_long: postgresql }
+
+  tasks:
+  - selinux:
+      state: disabled
+
+  - name: Install JBoss EAP dependencies
+    yum:
+      pkg: "{{ item }}"
+      state: present
+    with_items:
+      - java-1.8.0-openjdk-devel
+
+  - user:
+      name: eap
+      home: /opt/jboss-eap-6.4
+      comment: "JBoss EAP"      
+
+  - name: Install JBoss EAP
+    become_user: eap
+    command: jar xvf /vagrant/jboss-eap-6.4.0.zip
+    args:
+      chdir: /opt
+      creates: /opt/jboss-eap-6.4/version.txt
+    
+  - name: Install JBoss EAP Service
+    copy:
+      src: files/jboss-eap.service
+      dest: /etc/systemd/system/jboss-eap.service
+    notify:
+      systemctl daemon-reload
+
+  - meta: flush_handlers
+
+  - name: Enable JBoss EAP
+    service:
+      name: jboss-eap
+      enabled: yes
+      state: started
+
+  handlers:
+    - name: systemctl daemon-reload
+      command: systemctl daemon-reload
+#  - name: Enable Zabbix Java Gateway

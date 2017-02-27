@@ -1,0 +1,168 @@
+---
+- hosts: all
+  vars:
+    ansible_become: True
+    #database_type: pgsql
+    #database_type_long: postgresql
+    #server_dbport: 5432
+
+  # pre_tasks:
+  # - name: Install Postgresql
+  #   yum:
+  #     pkg: postgresql-server
+  #     state: present
+
+  # - name: Initiate database
+  #   command: service postgresql initdb
+  #   args:
+  #     creates: /var/lib/pgsql/data/postgresql.conf
+
+  # - name: Configure PostgreSQL authentication
+  #   lineinfile:
+  #     dest: /var/lib/pgsql/data/pg_hba.conf
+  #     regexp: '^host +all +all +::1/128 +ident'
+  #     line: 'host    all             all             ::1/128            trust'
+
+  # - name: Enable PostgreSQL
+  #   service:
+  #     name: "{{ item }}"
+  #     enabled: yes
+  #     state: started
+  #   with_items:
+  #     - postgresql
+
+#  roles:
+#  - { role: geerlingguy.apache }
+#  - { role: dj-wasabi.zabbix-server, database_type: pgsql, database_type_long: postgresql }
+
+  tasks:
+  - selinux:
+      state: disabled
+
+  - name: Add Zabbix repo
+    yum_repository:
+      name: zabbix
+      description: Zabbix Repo
+      baseurl: http://repo.zabbix.com/zabbix/3.2/rhel/7/x86_64/
+      gpgcheck: no
+
+  - name: Install Zabbix
+    yum:
+      pkg: "{{ item }}"
+      state: present
+    with_items:
+      - postgresql-server
+      - python-psycopg2
+      - libsemanage-python
+      - zabbix-server-pgsql
+      - zabbix-web-pgsql
+      - zabbix-agent
+      - https://devzone.ch/~tschan/zabbix-java-gateway-3.2.3-1.el7.centos.x86_64.rpm
+
+  - name: Initiate database
+    command: service postgresql initdb
+    args:
+      creates: /var/lib/pgsql/data/postgresql.conf
+
+  - name: Configure PostgreSQL authentication
+    lineinfile:
+      dest: /var/lib/pgsql/data/pg_hba.conf
+      regexp: '^host +all +all +::1/128'
+      line: 'host    all             all             ::1/128            trust'
+
+  - name: Configure PostgreSQL authentication
+    lineinfile:
+      dest: /var/lib/pgsql/data/pg_hba.conf
+      regexp: '^local +all +all'
+      line: 'local   all             all                                     trust'
+
+  - name: Enable PostgreSQL
+    service:
+      name: "{{ item }}"
+      enabled: yes
+      state: started
+    with_items:
+      - postgresql
+
+  - name: Configure PostgreSQL user
+    postgresql_user:
+      name: zabbix
+      password: zabbix42
+      role_attr_flags: CREATEDB,NOSUPERUSER
+
+  - name: Create PostgreSQL database
+    postgresql_db:
+      name: zabbix
+      owner: zabbix
+
+  - name: Create Database Schema
+    shell: zcat /usr/share/doc/zabbix-server-pgsql-3.2.*/create.sql.gz | psql -U zabbix zabbix
+
+  - name: Configure PHP
+    lineinfile:
+      dest: /etc/httpd/conf.d/zabbix.conf
+      regexp: php_value date.timezone
+      line: php_value date.timezone Europe/Zurich
+
+  - name: Configure Zabbix
+    ini_file:
+      dest: /etc/zabbix/zabbix_server.conf
+      section: null
+      option: "{{ item.key }}"
+      value: "{{ item.value }}"
+    with_dict:
+      JavaGateway: localhost
+      StartJavaPollers: 1
+
+#  - seboolean:
+#      name: "{{ item }}"
+#      state: on
+#      persistent: yes
+#    with_items:
+#      - httpd_can_connect_zabbix
+#      - httpd_can_network_connect_db
+#      - zabbix_can_network
+
+  - name: Enable Zabbix Services
+    service:
+      name: "{{ item }}"
+      enabled: yes
+      state: started
+    with_items:
+      - httpd
+      - zabbix-server
+      - zabbix-agent
+      - zabbix-java-gateway
+
+#  - name: Install Zabbix Agent and Java Gateway
+#    yum:
+#      pkg: "{{ item }}"
+#      state: present
+#    with_items:
+#      - zabbix-agent
+#      - https://devzone.ch/~tschan/zabbix-java-gateway-3.2.3-1.el7.centos.x86_64.rpm
+
+  - name: Install JBoss EAP dependencies
+    yum:
+      pkg: "{{ item }}"
+      state: present
+    with_items:
+      - java-1.8.0-openjdk-devel
+
+  - user:
+      name: eap
+      home: /opt/jboss-eap-6.4
+      comment: "JBoss EAP"      
+
+  - name: Install JBoss EAP
+    #become_user: eap
+    command: su eap -c 'jar xvf /vagrant/jboss-eap-6.4.0.zip'
+    args:
+      chdir: /opt
+      creates: /opt/jboss-eap-6.4/version.txt
+    
+  - name: Copy jboss-client.jar into Zabbix CLASSPATH
+    command: cp /opt/jboss-eap-6.4/bin/client/jboss-client.jar /usr/share/zabbix-java-gateway/lib
+    args:
+      creates: /usr/share/zabbix-java-gateway/lib/jboss-client.jar
+ 
