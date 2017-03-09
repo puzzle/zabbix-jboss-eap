@@ -39,12 +39,46 @@
   - selinux:
       state: disabled
 
+  - name: Add Zabbix repo
+    yum_repository:
+      name: zabbix
+      description: Zabbix Repo
+      baseurl: http://repo.zabbix.com/zabbix/3.2/rhel/7/x86_64/
+      gpgcheck: no
+
+  - name: Install Zabbix
+    yum:
+      pkg: "{{ item }}"
+      state: present
+    with_items:
+      - zabbix-agent
+
+  - name: Configure Zabbix
+    ini_file:
+      dest: /etc/zabbix/zabbix_agentd.conf
+      section: null
+      option: "{{ item.key }}"
+      value: "{{ item.value }}"
+    with_dict:
+      Server: 192.168.122.11
+      ServerActive: 192.168.122.11
+      Hostname: JBoss EAP
+
+  - name: Enable Zabbix Services
+    service:
+      name: "{{ item }}"
+      enabled: yes
+      state: started
+    with_items:
+      - zabbix-agent
+
   - name: Install JBoss EAP dependencies
     yum:
       pkg: "{{ item }}"
       state: present
     with_items:
       - java-1.8.0-openjdk-devel
+      - unzip
 
   - user:
       name: eap
@@ -53,10 +87,14 @@
 
   - name: Install JBoss EAP
     become_user: eap
-    command: jar xvf /vagrant/jboss-eap-6.4.0.zip
-    args:
-      chdir: /opt
+    unarchive:
+      src: /vagrant/jboss-eap-6.4.0.zip
+      dest: /opt
       creates: /opt/jboss-eap-6.4/version.txt
+    
+  - name: Add JBoss EAP management user
+    become_user: eap
+    shell: /opt/jboss-eap-6.4/bin/add-user.sh -u zabbix -p Zabbix42_
     
   - name: Install JBoss EAP Service
     copy:
