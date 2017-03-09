@@ -1,0 +1,16 @@
+[Unit]
+Description=JBoss EAP
+After=network.target
+
+[Service]
+Environment="JAVA_HOME=/usr/lib/jvm/java"
+User=eap
+Group=eap
+WorkingDirectory=/opt/jboss-eap-6.4
+ExecStart=/bin/bash /opt/jboss-eap-6.4/bin/standalone.sh -Djboss.bind.address=0.0.0.0 -Djboss.bind.address.management=0.0.0.0
+KillMode=mixed
+TimeoutStopSec=30
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
