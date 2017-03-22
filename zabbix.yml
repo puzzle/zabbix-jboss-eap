@@ -51,6 +51,7 @@
       pkg: "{{ item }}"
       state: present
     with_items:
+      - unzip
       - postgresql-server
       - python-psycopg2
       - libsemanage-python
@@ -155,11 +156,19 @@
       comment: "JBoss EAP"      
 
   - name: Install JBoss EAP
-    #become_user: eap
-    command: su eap -c 'jar xvf /vagrant/jboss-eap-6.4.0.zip'
-    args:
-      chdir: /opt
+    unarchive:
+      src: /vagrant/jboss-eap-6.4.0.zip
+      dest: /opt
+      owner: eap
+      group: eap
       creates: /opt/jboss-eap-6.4/version.txt
+    
+#  - name: Install JBoss EAP
+    #become_user: eap
+#    command: su eap -c 'unzip /vagrant/jboss-eap-6.4.0.zip'
+#    args:
+#      chdir: /opt
+#      creates: /opt/jboss-eap-6.4/version.txt
     
   - name: Copy jboss-client.jar into Zabbix CLASSPATH
     command: cp /opt/jboss-eap-6.4/bin/client/jboss-client.jar /usr/share/zabbix-java-gateway/lib
