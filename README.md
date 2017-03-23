@@ -9,9 +9,9 @@ Tested with Zabbix 3.2 and JBoss EAP 6.4.
 Access to each Java gateway is configured directly in Zabbix server or proxy configuration file, thus only one Java gateway may be configured per Zabbix server or Zabbix proxy.
 
 2. Add JBoss EAP management user
-   /opt/jboss-eap-6.4/bin/add-user.sh -u zabbix -p Zabbix42_
+   /opt/jboss-eap-6.4/bin/add-user.sh -u zabbix -p <password>
 
-2. Install patched Zabbix Java Gateway https://devzone.ch/~tschan/zabbix-java-gateway-3.2.3-1.el7.centos.x86_64.rpm
+2. Install patched Zabbix Java Gateway matching the version of you Zabbix installation from the releases of this repository.
 
 3. Configure Java Gateway in ``/etc/zabbix/zabbix_server.conf``:
 
@@ -27,8 +27,9 @@ https://www.zabbix.com/documentation/3.2/manual/concepts/java
 5. Enable ``zabbix-java-gateway`` service
 
 6. Add a JMX interface to JBoss EAP host you want to monitor.the host who is running the Zabbix Java Gateway and monitoring your JBoss EAP servers via JMX, e.g.
-127.0.0.1:10052
-DNS, _service._jmx._remoting-jmx.localhost, 9999
+
+* DNS: _service._jmx._remoting-jmx.localhost 
+* Port: 9999
 
 7. Add item with:
 interface, username, password, key: jmx["java.lang:type=Memory","HeapMemoryUsage.used"]
