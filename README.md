@@ -33,11 +33,13 @@ DNS, _service._jmx._remoting-jmx.localhost, 9999
 7. Add item with:
 interface, username, password, key: jmx["java.lang:type=Memory","HeapMemoryUsage.used"]
 
-
-https://github.com/marcanpilami/Zabbix-JBoss-Agent
-
-
 ## Troubleshooting
 
 com.zabbix.gateway.ZabbixException: javax.security.sasl.SaslException: Authentication failed: the server presented no authentication mechanisms
  => User cannot log in, e.g. because of missing or incorrent login data in Zabbix or missing user in EAP
+
+## Resources
+
+* https://www.zabbix.org/wiki/ConfigureJMX
+* https://www.zabbix.org/wiki/Docs/howto/jmx_discovery
+* https://github.com/jmxtrans/jmxtrans/wiki/MoreExamples
