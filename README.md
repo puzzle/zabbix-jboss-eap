@@ -39,6 +39,44 @@ interface, username, password, key: jmx["java.lang:type=Memory","HeapMemoryUsage
 com.zabbix.gateway.ZabbixException: javax.security.sasl.SaslException: Authentication failed: the server presented no authentication mechanisms
  => User cannot log in, e.g. because of missing or incorrent login data in Zabbix or missing user in EAP
 
+## Build Patched Java Gateway RPM
+
+The following steps describe how to build the patched Java Gateway RPM:
+
+* Download the Source RPM (SRPM) of Zabbix in the same version as your Server
+```
+curl -L -O http://repo.zabbix.com/zabbix/3.2/rhel/7/SRPMS/zabbix-3.2.3-1.el7.src.rpm
+```
+* Install the SRPM (this installs the files to `~/rpmbuild/`)
+```
+rpm -ihv zabbix-3.2.7-1.el7.src.rpm
+```
+* Add the patch to the files
+```
+cd ~/rpmbuild/SOURCES
+curl -O https://raw.githubusercontent.com/puzzle/zabbix-jboss-eap/master/zabbix-3.2.3-jmx-remoting.patch
+```
+* Add the patch to the specfile
+  * Open `~/rpmbuild/SPECS/zabbix
+  * Look for `Patch` and add your patch
+  * Look for `%patch` and apply your patch
+```
+...
+Patch3:         zabbix-3.2.3-jmx-remoting.patch
+...
+%patch3 -p1
+...
+```
+* Install build dependencies
+```
+yum install rpm-build gcc
+yum-builddep ~/rpmbuild/SPECS/zabbix.spec
+```
+* Build the RPM
+```
+rpmbuild -bb ~/rpmbuild/SPECS/zabbix.spec
+```
+
 ## Resources
 
 * https://www.zabbix.org/wiki/ConfigureJMX

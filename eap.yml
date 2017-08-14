@@ -2,6 +2,7 @@
 - hosts: all
   vars:
     ansible_become: True
+    jboss_version: 7.0
     #database_type: pgsql
     #database_type_long: postgresql
     #server_dbport: 5432
@@ -62,7 +63,7 @@
     with_dict:
       Server: 192.168.122.11
       ServerActive: 192.168.122.11
-      Hostname: JBoss EAP
+      Hostname: JBoss EAP {{ jboss_version }}
 
   - name: Enable Zabbix Services
     service:
@@ -82,22 +83,22 @@
 
   - user:
       name: eap
-      home: /opt/jboss-eap-6.4
+      home: /opt/jboss-eap-{{ jboss_version }}
       comment: "JBoss EAP"      
 
   - name: Install JBoss EAP
     become_user: eap
     unarchive:
-      src: /vagrant/jboss-eap-6.4.0.zip
+      src: /vagrant/jboss-eap-{{ jboss_version }}.0.zip
       dest: /opt
-      creates: /opt/jboss-eap-6.4/version.txt
+      creates: /opt/jboss-eap-{{ jboss_version }}/version.txt
     
   - name: Add JBoss EAP management user
     become_user: eap
-    shell: /opt/jboss-eap-6.4/bin/add-user.sh -u zabbix -p Zabbix42_
+    shell: /opt/jboss-eap-{{ jboss_version }}/bin/add-user.sh -u zabbix -p Zabbix42_
     
   - name: Install JBoss EAP Service
-    copy:
+    template:
       src: files/jboss-eap.service
       dest: /etc/systemd/system/jboss-eap.service
     notify:
