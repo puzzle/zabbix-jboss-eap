@@ -169,9 +169,16 @@
 #    args:
 #      chdir: /opt
 #      creates: /opt/jboss-eap-6.4/version.txt
-    
+
   - name: Copy jboss-client.jar into Zabbix CLASSPATH
+    register: copy_jar
     command: cp /opt/jboss-eap-6.4/bin/client/jboss-client.jar /usr/share/zabbix-java-gateway/lib
     args:
       creates: /usr/share/zabbix-java-gateway/lib/jboss-client.jar
- 
+
+  - name: Restart Zabbix Java Gateway
+    service:
+      name: zabbix-java-gateway
+      state: restarted
+    when: copy_jar.changed
+

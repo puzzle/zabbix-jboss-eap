@@ -112,6 +112,24 @@ Vagrant.configure(2) do |config|
 
     vmconfig.vm.provision "ansible_local" do |ansible|
       ansible.playbook = "eap.yml"
+      ansible.extra_vars = {
+        jboss_version: "6.4"
+      }
+    end
+  end
+
+  config.vm.define "eap7" do |vmconfig|
+    vmconfig.vm.hostname = "eap7.lan"
+
+    vmconfig.vm.network :private_network,
+            :ip => "192.168.122.13",
+            :libvirt__network_name => "default"
+
+    vmconfig.vm.provision "ansible_local" do |ansible|
+      ansible.playbook = "eap.yml"
+      ansible.extra_vars = {
+        jboss_version: "7.0"
+      }
     end
   end
 
